@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#121212"
+    android:padding="16dp">
+
+    <!-- Title -->
+    <TextView
+        android:id="@+id/titleText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Photo Enhancer"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="8dp"/>
+
+    <!-- Status Text -->
+    <TextView
+        android:id="@+id/statusText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Initializing..."
+        android:textColor="#4CAF50"
+        android:textSize="14sp"
+        android:textAlignment="center"
+        android:padding="12dp"
+        android:background="@drawable/rounded_background"
+        app:layout_constraintTop_toBottomOf="@id/titleText"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp"/>
+
+    <!-- Image Comparison Slider -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/comparisonCard"
+        android:layout_width="0dp"
+        android:layout_height="350dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="4dp"
+        app:layout_constraintTop_toBottomOf="@id/statusText"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp">
+
+        <com.panam.arm_hackthon.views.ImageComparisonSlider
+            android:id="@+id/comparisonSlider"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#000000"/>
+    </androidx.cardview.widget.CardView>
+
+    <!-- Slider Instructions -->
+    <TextView
+        android:id="@+id/sliderInstructions"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="👆 Drag to compare"
+        android:textColor="#B0B0B0"
+        android:textSize="11sp"
+        android:textAlignment="center"
+        android:padding="4dp"
+        app:layout_constraintTop_toBottomOf="@id/comparisonCard"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="4dp"
+        android:visibility="gone"/>
+
+    <!-- Performance Text -->
+    <TextView
+        android:id="@+id/performanceText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textColor="#B0B0B0"
+        android:textSize="11sp"
+        android:padding="8dp"
+        android:background="@drawable/rounded_background"
+        android:lineSpacingExtra="2dp"
+        app:layout_constraintBottom_toTopOf="@id/selectImageButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="8dp"
+        android:visibility="gone"/>
+
+    <!-- Progress Bar -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:indeterminateTint="#4CAF50"
+        app:layout_constraintBottom_toTopOf="@id/selectImageButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="8dp"
+        android:visibility="gone"/>
+
+    <!-- Buttons -->
+    <Button
+        android:id="@+id/selectImageButton"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:text="📷 SELECT IMAGE"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:backgroundTint="#1E88E5"
+        app:layout_constraintBottom_toTopOf="@id/enhanceButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="8dp"/>
+
+    <Button
+        android:id="@+id/enhanceButton"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:text="✨ ENHANCE"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:backgroundTint="#4CAF50"
+        android:enabled="false"
+        app:layout_constraintBottom_toTopOf="@id/footerText"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/saveButton"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"/>
+
+    <Button
+        android:id="@+id/saveButton"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:text="💾 SAVE"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:backgroundTint="#FF9800"
+        android:enabled="false"
+        app:layout_constraintBottom_toTopOf="@id/footerText"
+        app:layout_constraintStart_toEndOf="@id/enhanceButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginStart="8dp"
+        android:layout_marginBottom="8dp"/>
+
+    <!-- Footer -->
+    <TextView
+        android:id="@+id/footerText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Powered by Arm NNAPI"
+        android:textColor="#757575"
+        android:textSize="11sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="8dp"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
