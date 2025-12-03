@@ -53,6 +53,9 @@ dependencies {
     // ONNX Runtime for on-device inference
     implementation("com.microsoft.onnxruntime:onnxruntime-android:1.17.0")
 
+    // ExifInterface for image orientation handling
+    implementation("androidx.exifinterface:exifinterface:1.3.7")
+
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")

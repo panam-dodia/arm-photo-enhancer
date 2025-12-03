@@ -126,7 +126,7 @@ class ZeroDCE(private val context: Context) {
     }
 
     /**
-     * Resize bitmap for inference
+     * Resize bitmap for inference with high-quality filtering
      */
     private fun resizeForInference(bitmap: Bitmap, maxSize: Int): Bitmap {
         val width = bitmap.width
@@ -144,7 +144,22 @@ class ZeroDCE(private val context: Context) {
         val newWidth = (width * scale).toInt()
         val newHeight = (height * scale).toInt()
 
-        return Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
+        // Use Canvas with high-quality Paint for smooth edges (no jagging)
+        val result = Bitmap.createBitmap(newWidth, newHeight, Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(result)
+
+        val paint = android.graphics.Paint().apply {
+            isAntiAlias = true       // Smooth edges
+            isFilterBitmap = true    // Better interpolation
+            isDither = true          // Reduce color banding
+        }
+
+        val srcRect = android.graphics.Rect(0, 0, width, height)
+        val dstRect = android.graphics.Rect(0, 0, newWidth, newHeight)
+
+        canvas.drawBitmap(bitmap, srcRect, dstRect, paint)
+
+        return result
     }
 
     /**

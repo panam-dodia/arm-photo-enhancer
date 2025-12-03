@@ -3,11 +3,13 @@ package com.panam.arm_hackthon
 import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.net.Uri
 import android.os.Bundle
 import android.os.Build
 import android.provider.MediaStore
 import android.widget.*
+import androidx.exifinterface.media.ExifInterface
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -117,11 +119,14 @@ class MainActivity : AppCompatActivity() {
     private fun loadImage(uri: Uri) {
         try {
             val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, uri)
-            currentInputBitmap = bitmap
+
+            // Fix EXIF orientation (rotates images that are incorrectly oriented)
+            val rotatedBitmap = fixImageOrientation(uri, bitmap)
+            currentInputBitmap = rotatedBitmap
 
             // Set before image in slider
-            comparisonSlider.setBeforeImage(bitmap)
-            comparisonSlider.setAfterImage(bitmap) // Show same image initially
+            comparisonSlider.setBeforeImage(rotatedBitmap)
+            comparisonSlider.setAfterImage(rotatedBitmap) // Show same image initially
             comparisonSlider.reset()
 
             enhanceButton.isEnabled = true
@@ -134,6 +139,65 @@ class MainActivity : AppCompatActivity() {
         } catch (e: IOException) {
             Toast.makeText(this, "Failed to load image", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun fixImageOrientation(uri: Uri, bitmap: Bitmap): Bitmap {
+        val inputStream = contentResolver.openInputStream(uri) ?: return bitmap
+
+        return try {
+            val exif = ExifInterface(inputStream)
+            val orientation = exif.getAttributeInt(
+                ExifInterface.TAG_ORIENTATION,
+                ExifInterface.ORIENTATION_NORMAL
+            )
+
+            android.util.Log.i("MainActivity", "EXIF orientation: $orientation")
+
+            when (orientation) {
+                ExifInterface.ORIENTATION_ROTATE_90 -> {
+                    android.util.Log.i("MainActivity", "Rotating image 90°")
+                    rotateBitmap(bitmap, 90f)
+                }
+                ExifInterface.ORIENTATION_ROTATE_180 -> {
+                    android.util.Log.i("MainActivity", "Rotating image 180°")
+                    rotateBitmap(bitmap, 180f)
+                }
+                ExifInterface.ORIENTATION_ROTATE_270 -> {
+                    android.util.Log.i("MainActivity", "Rotating image 270°")
+                    rotateBitmap(bitmap, 270f)
+                }
+                ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> {
+                    android.util.Log.i("MainActivity", "Flipping image horizontally")
+                    flipBitmap(bitmap, horizontal = true)
+                }
+                ExifInterface.ORIENTATION_FLIP_VERTICAL -> {
+                    android.util.Log.i("MainActivity", "Flipping image vertically")
+                    flipBitmap(bitmap, horizontal = false)
+                }
+                else -> {
+                    android.util.Log.i("MainActivity", "No rotation needed")
+                    bitmap
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Failed to read EXIF", e)
+            bitmap
+        } finally {
+            inputStream.close()
+        }
+    }
+
+    private fun rotateBitmap(bitmap: Bitmap, degrees: Float): Bitmap {
+        val matrix = Matrix().apply { postRotate(degrees) }
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+    }
+
+    private fun flipBitmap(bitmap: Bitmap, horizontal: Boolean): Bitmap {
+        val matrix = Matrix().apply {
+            if (horizontal) postScale(-1f, 1f)
+            else postScale(1f, -1f)
+        }
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
     }
 
     private fun enhanceImage(bitmap: Bitmap) {

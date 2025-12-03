@@ -65,44 +65,74 @@ class ImageComparisonSlider @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
-        val width = width.toFloat()
-        val height = height.toFloat()
-        val dividerX = width * sliderPosition
+        val viewWidth = width.toFloat()
+        val viewHeight = height.toFloat()
+        val dividerX = viewWidth * sliderPosition
 
-        // Draw before image (left side)
-        beforeBitmap?.let { bitmap ->
-            val srcRect = RectF(0f, 0f, bitmap.width * sliderPosition, bitmap.height.toFloat())
-            val dstRect = RectF(0f, 0f, dividerX, height)
-            canvas.drawBitmap(bitmap, srcRect.toRect(), dstRect.toRect(), paint)
+        // Draw black background
+        canvas.drawColor(Color.BLACK)
 
-            // Draw "BEFORE" label on left side
-            if (sliderPosition > 0.2f) {
-                canvas.drawText("BEFORE", dividerX / 2, 60f, textPaint)
+        // Calculate scaled image bounds (FIT_CENTER - preserve aspect ratio)
+        val bitmap = beforeBitmap ?: afterBitmap
+        if (bitmap != null) {
+            val scale = min(viewWidth / bitmap.width, viewHeight / bitmap.height)
+            val scaledWidth = bitmap.width * scale
+            val scaledHeight = bitmap.height * scale
+            val left = (viewWidth - scaledWidth) / 2
+            val top = (viewHeight - scaledHeight) / 2
+            val right = left + scaledWidth
+            val bottom = top + scaledHeight
+
+            // Draw before image (left side)
+            beforeBitmap?.let { bmp ->
+                // Calculate how much of the source image to show (based on divider position)
+                val srcWidth = bmp.width * sliderPosition
+                val srcRect = RectF(0f, 0f, srcWidth, bmp.height.toFloat())
+
+                // Calculate destination rect (scaled and positioned)
+                val dstWidth = scaledWidth * sliderPosition
+                val dstRect = RectF(left, top, left + dstWidth, bottom)
+
+                // Clip to divider
+                canvas.save()
+                canvas.clipRect(0f, 0f, dividerX, viewHeight)
+                canvas.drawBitmap(bmp, srcRect.toRect(), dstRect.toRect(), paint)
+                canvas.restore()
+
+                // Draw "BEFORE" label on left side
+                if (sliderPosition > 0.2f) {
+                    canvas.drawText("BEFORE", dividerX / 2, 60f, textPaint)
+                }
             }
-        }
 
-        // Draw after image (right side)
-        afterBitmap?.let { bitmap ->
-            val srcRect = RectF(
-                bitmap.width * sliderPosition,
-                0f,
-                bitmap.width.toFloat(),
-                bitmap.height.toFloat()
-            )
-            val dstRect = RectF(dividerX, 0f, width, height)
-            canvas.drawBitmap(bitmap, srcRect.toRect(), dstRect.toRect(), paint)
+            // Draw after image (right side)
+            afterBitmap?.let { bmp ->
+                // Calculate how much of the source image to show
+                val srcLeft = bmp.width * sliderPosition
+                val srcRect = RectF(srcLeft, 0f, bmp.width.toFloat(), bmp.height.toFloat())
 
-            // Draw "AFTER" label on right side
-            if (sliderPosition < 0.8f) {
-                canvas.drawText("AFTER", dividerX + (width - dividerX) / 2, 60f, textPaint)
+                // Calculate destination rect
+                val dstLeft = left + (scaledWidth * sliderPosition)
+                val dstRect = RectF(dstLeft, top, right, bottom)
+
+                // Clip to divider
+                canvas.save()
+                canvas.clipRect(dividerX, 0f, viewWidth, viewHeight)
+                canvas.drawBitmap(bmp, srcRect.toRect(), dstRect.toRect(), paint)
+                canvas.restore()
+
+                // Draw "AFTER" label on right side
+                if (sliderPosition < 0.8f) {
+                    canvas.drawText("AFTER", dividerX + (viewWidth - dividerX) / 2, 60f, textPaint)
+                }
             }
         }
 
         // Draw vertical divider line
-        canvas.drawLine(dividerX, 0f, dividerX, height, dividerPaint)
+        canvas.drawLine(dividerX, 0f, dividerX, viewHeight, dividerPaint)
 
         // Draw handle (circle with arrows)
-        val handleY = height / 2
+        val handleY = viewHeight / 2
 
         // Circle
         canvas.drawCircle(dividerX, handleY, handleRadius, handlePaint)

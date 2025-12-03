@@ -418,44 +418,45 @@ class UNet(private val context: Context) {
     }
 
     /**
-     * Pad image to fixed canvas size (instead of resizing)
-     * Adds black bars to maintain aspect ratio
+     * Resize image if larger than maxSize, preserving aspect ratio
+     * No padding - just resize down if needed
+     * Uses high-quality Canvas-based scaling for smooth edges
      */
     private fun resizeForInference(bitmap: Bitmap, maxSize: Int): Bitmap {
         val width = bitmap.width
         val height = bitmap.height
 
-        // If image is larger than maxSize, resize it down first
-        val resized = if (width > maxSize || height > maxSize) {
+        // If image is larger than maxSize, resize it down
+        return if (width > maxSize || height > maxSize) {
             val scale = minOf(
                 maxSize.toFloat() / width,
                 maxSize.toFloat() / height
             )
             val newWidth = (width * scale).toInt()
             val newHeight = (height * scale).toInt()
-            Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
+
+            android.util.Log.d(TAG, "Resizing ${width}x${height} → ${newWidth}x${newHeight} (no padding)")
+
+            // Use Canvas with high-quality Paint for smooth edges (no jagging)
+            val result = android.graphics.Bitmap.createBitmap(newWidth, newHeight, android.graphics.Bitmap.Config.ARGB_8888)
+            val canvas = android.graphics.Canvas(result)
+
+            val paint = android.graphics.Paint().apply {
+                isAntiAlias = true       // Smooth edges
+                isFilterBitmap = true    // Better interpolation
+                isDither = true          // Reduce color banding
+            }
+
+            val srcRect = android.graphics.Rect(0, 0, width, height)
+            val dstRect = android.graphics.Rect(0, 0, newWidth, newHeight)
+
+            canvas.drawBitmap(bitmap, srcRect, dstRect, paint)
+
+            result
         } else {
+            android.util.Log.d(TAG, "Image ${width}x${height} fits within ${maxSize}px, no resize needed")
             bitmap
         }
-
-        // Now pad to exact maxSize x maxSize canvas with black bars
-        val paddedWidth = maxSize
-        val paddedHeight = maxSize
-
-        // Create canvas with black background
-        val paddedBitmap = Bitmap.createBitmap(paddedWidth, paddedHeight, Bitmap.Config.ARGB_8888)
-        val canvas = android.graphics.Canvas(paddedBitmap)
-        canvas.drawColor(android.graphics.Color.BLACK) // Black bars
-
-        // Center the image on canvas
-        val left = (paddedWidth - resized.width) / 2f
-        val top = (paddedHeight - resized.height) / 2f
-
-        canvas.drawBitmap(resized, left, top, null)
-
-        android.util.Log.d(TAG, "Padded ${resized.width}x${resized.height} → ${paddedWidth}x${paddedHeight}")
-
-        return paddedBitmap
     }
 
     private fun preprocessBitmap(bitmap: Bitmap): FloatBuffer {
