@@ -120,14 +120,30 @@
         android:layout_width="0dp"
         android:layout_height="56dp"
         android:text="✨ ENHANCE"
-        android:textSize="16sp"
+        android:textSize="14sp"
         android:textStyle="bold"
         android:backgroundTint="#4CAF50"
         android:enabled="false"
         app:layout_constraintBottom_toTopOf="@id/footerText"
         app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/restoreButton"
+        android:layout_marginEnd="4dp"
+        android:layout_marginBottom="8dp"/>
+
+    <Button
+        android:id="@+id/restoreButton"
+        android:layout_width="0dp"
+        android:layout_height="56dp"
+        android:text="🔧 RESTORE"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:backgroundTint="#9C27B0"
+        android:enabled="false"
+        app:layout_constraintBottom_toTopOf="@id/footerText"
+        app:layout_constraintStart_toEndOf="@id/enhanceButton"
         app:layout_constraintEnd_toStartOf="@id/saveButton"
-        android:layout_marginEnd="8dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginEnd="4dp"
         android:layout_marginBottom="8dp"/>
 
     <Button
@@ -135,14 +151,14 @@
         android:layout_width="0dp"
         android:layout_height="56dp"
         android:text="💾 SAVE"
-        android:textSize="16sp"
+        android:textSize="14sp"
         android:textStyle="bold"
         android:backgroundTint="#FF9800"
         android:enabled="false"
         app:layout_constraintBottom_toTopOf="@id/footerText"
-        app:layout_constraintStart_toEndOf="@id/enhanceButton"
+        app:layout_constraintStart_toEndOf="@id/restoreButton"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginStart="8dp"
+        android:layout_marginStart="4dp"
         android:layout_marginBottom="8dp"/>
 
     <!-- Footer -->

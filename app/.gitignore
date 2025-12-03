@@ -10,3 +10,5 @@ echo "*.iml
 *.apk
 *.ap_
 *.dex" > .gitignore
+/models
+app/src/main/assets/models/*.onnx
