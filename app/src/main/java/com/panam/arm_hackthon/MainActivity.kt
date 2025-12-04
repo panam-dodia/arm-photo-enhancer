@@ -24,6 +24,10 @@ import android.content.IntentFilter
 import android.content.Intent
 import java.io.File
 import java.io.FileOutputStream
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import androidx.core.app.NotificationCompat
 
 class MainActivity : AppCompatActivity() {
 
@@ -41,8 +45,12 @@ class MainActivity : AppCompatActivity() {
     private var currentInputBitmap: Bitmap? = null
     private var currentOutputBitmap: Bitmap? = null
 
-    private var progressDialog: AlertDialog? = null
     private var restorationReceiver: BroadcastReceiver? = null
+
+    companion object {
+        private const val SAVE_NOTIFICATION_CHANNEL_ID = "image_save_channel"
+        private const val SAVE_NOTIFICATION_ID = 1
+    }
 
     private val imagePickerLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
@@ -66,6 +74,9 @@ class MainActivity : AppCompatActivity() {
         performanceText = findViewById(R.id.performanceText)
         sliderInstructions = findViewById(R.id.sliderInstructions)
         progressBar = findViewById(R.id.progressBar)
+
+        // Create notification channel for save notifications
+        createSaveNotificationChannel()
 
         // Initialize Zero-DCE model for enhancement (lazy loading for restoration models)
         zeroDCE = ZeroDCE(this)
@@ -227,22 +238,10 @@ class MainActivity : AppCompatActivity() {
                     comparisonSlider.setAfterImage(enhanced)
                     comparisonSlider.reset() // Reset to middle position
 
-                    statusText.text = "Successful"
+                    statusText.text = "Enhancement complete"
                     sliderInstructions.visibility = TextView.VISIBLE
-                    performanceText.visibility = TextView.VISIBLE
-                    performanceText.text = buildString {
-                        append("⚡ ${inferenceTime}ms\n")
-                        append("📱 ${enhanced.width}x${enhanced.height}\n")
-                        append("🚀 Arm NNAPI")
-                    }
 
                     saveButton.isEnabled = true
-
-                    Toast.makeText(
-                        this@MainActivity,
-                        "Enhanced in ${inferenceTime}ms",
-                        Toast.LENGTH_SHORT
-                    ).show()
                 } else {
                     statusText.text = "Failed"
                     Toast.makeText(
@@ -264,6 +263,46 @@ class MainActivity : AppCompatActivity() {
                 enhanceButton.isEnabled = true
             }
         }
+    }
+
+    private fun createSaveNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "Image Saved"
+            val descriptionText = "Notifications when images are saved"
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val channel = NotificationChannel(SAVE_NOTIFICATION_CHANNEL_ID, name, importance).apply {
+                description = descriptionText
+            }
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
+    private fun showSaveNotification(imageUri: Uri, filename: String) {
+        // Intent to open the saved image
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(imageUri, "image/jpeg")
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(this, SAVE_NOTIFICATION_CHANNEL_ID)
+            .setContentTitle("Image Saved")
+            .setContentText("Tap to view $filename")
+            .setSmallIcon(android.R.drawable.ic_menu_gallery)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .build()
+
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(SAVE_NOTIFICATION_ID, notification)
     }
 
     private fun saveImageToGallery(bitmap: Bitmap) {
@@ -292,6 +331,9 @@ class MainActivity : AppCompatActivity() {
                             "Saved to Gallery",
                             Toast.LENGTH_SHORT
                         ).show()
+
+                        // Show notification with option to view image
+                        showSaveNotification(it, filename)
                     }
                 }
             } catch (e: Exception) {
@@ -314,25 +356,14 @@ class MainActivity : AppCompatActivity() {
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
             }
 
-            // Show progress dialog
-            val progressMessage = TextView(this@MainActivity).apply {
-                text = "Restoring: Step 0/100\nThis will take ~10 minutes...\nYou can minimize the app."
-                setPadding(60, 40, 60, 40)
-                textSize = 16f
-            }
-
-            progressDialog = AlertDialog.Builder(this@MainActivity)
-                .setTitle("Image Restoration")
-                .setView(progressMessage)
-                .setCancelable(false)
-                .create()
-            progressDialog?.show()
-
-            // Disable buttons
+            // Show progress in main UI (user can minimize app)
             restoreButton.isEnabled = false
             enhanceButton.isEnabled = false
+            selectImageButton.isEnabled = false
             progressBar.visibility = ProgressBar.VISIBLE
-            statusText.text = "Starting restoration service..."
+            statusText.text = "Starting restoration..."
+            performanceText.visibility = TextView.VISIBLE
+            performanceText.text = "You can minimize the app during restoration"
 
             // Start foreground service
             val serviceIntent = Intent(this, RestorationService::class.java).apply {
@@ -418,19 +449,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateRestorationProgress(current: Int, total: Int) {
         runOnUiThread {
-            statusText.text = "Restoring: Step $current/$total"
-            progressDialog?.findViewById<TextView>(android.R.id.message)?.text =
-                "Restoring: Step $current/$total\nPlease wait..."
+            statusText.text = "Restoring"
         }
     }
 
     private fun onRestorationComplete(outputPath: String?) {
         android.util.Log.i("MainActivity", "onRestorationComplete called with path: $outputPath")
         runOnUiThread {
-            android.util.Log.i("MainActivity", "Dismissing progress dialog")
-            progressDialog?.dismiss()
-            progressDialog = null
             progressBar.visibility = ProgressBar.GONE
+            performanceText.visibility = TextView.GONE
 
             if (outputPath != null) {
                 try {
@@ -445,8 +472,6 @@ class MainActivity : AppCompatActivity() {
                         statusText.text = "Restoration complete ✓"
                         sliderInstructions.visibility = TextView.VISIBLE
                         saveButton.isEnabled = true
-
-                        Toast.makeText(this, "Restoration completed!", Toast.LENGTH_SHORT).show()
 
                         // Delete temp file
                         java.io.File(outputPath).delete()
@@ -465,20 +490,21 @@ class MainActivity : AppCompatActivity() {
 
             restoreButton.isEnabled = true
             enhanceButton.isEnabled = true
+            selectImageButton.isEnabled = true
         }
     }
 
     private fun onRestorationError(error: String?) {
         runOnUiThread {
-            progressDialog?.dismiss()
-            progressDialog = null
             progressBar.visibility = ProgressBar.GONE
+            performanceText.visibility = TextView.GONE
 
-            statusText.text = "Error"
+            statusText.text = "Error: $error"
             Toast.makeText(this, "Error: $error", Toast.LENGTH_SHORT).show()
 
             restoreButton.isEnabled = true
             enhanceButton.isEnabled = true
+            selectImageButton.isEnabled = true
         }
     }
 
@@ -487,10 +513,6 @@ class MainActivity : AppCompatActivity() {
 
         // Unregister receiver
         unregisterRestorationReceiver()
-
-        // Dismiss progress dialog if showing
-        progressDialog?.dismiss()
-        progressDialog = null
 
         // Close Zero-DCE model (restoration models are managed by service)
         zeroDCE?.close()
